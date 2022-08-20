@@ -195,6 +195,7 @@ enum UserSelectablePins {
   GPIO_REL1_BI, GPIO_REL1_BI_INV,      // 8 x Relays bistable
   GPIO_I2S_MCLK,
   GPIO_MBR_TX, GPIO_MBR_RX,            // Modbus Bridge Serial interface
+  GPIO_PRINCESS_FAN_TX, GPIO_PRINCESS_FAN_RX,   // Princess fan
   GPIO_SENSOR_END };
 
 // Error as warning to rethink GPIO usage
@@ -437,6 +438,7 @@ const char kSensorNames[] PROGMEM =
   D_SENSOR_RELAY "_b|" D_SENSOR_RELAY "_bi|"
   D_SENSOR_I2S_MCLK "|"
   D_SENSOR_MBR_TX "|" D_SENSOR_MBR_RX "|"
+  D_SENSOR_PRINCESS_FAN_TX "|" D_SENSOR_PRINCESS_FAN_RX "|"
   ;
 
 const char kSensorNamesFixed[] PROGMEM =
