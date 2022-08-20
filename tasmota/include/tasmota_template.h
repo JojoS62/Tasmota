@@ -861,6 +861,10 @@ const uint16_t kGpioNiceList[] PROGMEM = {
   AGPIO(GPIO_MBR_TX),         // Modbus Bridge Serial interface
   AGPIO(GPIO_MBR_RX),         // Modbus Bridge Serial interface
 #endif
+#ifdef USE_PRINCESS_FAN
+  AGPIO(GPIO_PRINCESS_FAN_TX),         // Modbus Bridge Serial interface
+  AGPIO(GPIO_PRINCESS_FAN_RX),         // Modbus Bridge Serial interface
+#endif
 #ifdef USE_TCP_BRIDGE
   AGPIO(GPIO_TCP_TX),         // TCP Serial bridge
   AGPIO(GPIO_TCP_RX),         // TCP Serial bridge
