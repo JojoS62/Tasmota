@@ -776,6 +776,8 @@
 #undef DEBUG_THEO                                // Disable debug code
 #undef USE_DEBUG_DRIVER                          // Disable debug code
 #undef USE_AC_ZERO_CROSS_DIMMER                  // Disable support for AC_ZERO_CROSS_DIMMER
+
+#define USE_PRINCESS_FAN                         // Enable support for Princess fan (custom)
 #endif  // FIRMWARE_LITE
 
 
