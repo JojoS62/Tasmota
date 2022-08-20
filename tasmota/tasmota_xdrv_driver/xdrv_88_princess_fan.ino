@@ -55,7 +55,6 @@ bool SetPrincessFanBegin(void) {
 
 
 void PrincessFanPrintf(PGM_P formatP, ...) {
-#ifdef USE_PRINCESS_FAN_TEE
   if (Settings->sbflag1.serbridge_console && princess_fan_buffer) {
     va_list arg;
     va_start(arg, formatP);
@@ -66,7 +65,6 @@ void PrincessFanPrintf(PGM_P formatP, ...) {
     PrincessFanSerial->printf(data);
     free(data);
   }
-#endif  // USE_SERIAL_BRIDGE_TEE
 }
 
 /********************************************************************************************/
