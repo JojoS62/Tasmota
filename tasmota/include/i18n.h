@@ -740,6 +740,13 @@
 // Commands xdrv_60_shift595.ino - 74x595 family shift register driver
 #define D_CMND_SHIFT595_DEVICE_COUNT "Shift595DeviceCount"
 
+// Commands xdrv_88_princess_fan.ino
+#define D_CMND_FANPOWER "FanPower"
+#define D_CMND_FANSPEED "FanSpeed"
+#define D_CMND_FANMODE "FanMode"
+#define D_JSON_FANSERIALRECEIVED "FanSerialReceived"
+
+
 // Commands xsns_02_analog.ino
 #define D_CMND_ADCPARAM "AdcParam"
 
