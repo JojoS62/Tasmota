@@ -17,6 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define USE_PRINCESS_FAN
 #ifdef USE_PRINCESS_FAN
 /*********************************************************************************************\
  * Princess Fan driver using serial connection to fan controller
@@ -26,26 +27,26 @@
 #define HARDWARE_FALLBACK          2
 
 #ifdef ESP8266
-const uint16_t SERIAL_BRIDGE_BUFFER_SIZE = 64;
+static const uint16_t BUFFER_SIZE = 64;
 #else
-const uint16_t SERIAL_BRIDGE_BUFFER_SIZE = INPUT_BUFFER_SIZE;
+static const uint16_t BUFFER_SIZE = INPUT_BUFFER_SIZE;
 #endif
+static constexpr uint32_t PRINCESS_FAN_PACKET_SIZE = 4;
 
 
 const char kPrincessFanCommands[] PROGMEM = "|"  // No prefix
   D_CMND_SSERIALSEND;
 
 void (* const PrincessFanCommands[])(void) PROGMEM = {
-  &CmndSSerialSend };
+  &CmndPrincessSend };
 
 #include <TasmotaSerial.h>
 
-TasmotaSerial *PrincessFanSerial = nullptr;
+static TasmotaSerial *PrincessFanSerial = nullptr;
 
-unsigned long princess_fan_polling_window = 0;
-char *princess_fan_buffer = nullptr;
-int princess_fan_in_byte_counter = 0;
-bool princess_fan_raw = false;
+static unsigned long polling_window = 0;
+static char *buffer = nullptr;
+static int in_byte_counter = 0;
 
 /********************************************************************************************/
 
@@ -55,7 +56,7 @@ bool SetPrincessFanBegin(void) {
 
 
 void PrincessFanPrintf(PGM_P formatP, ...) {
-  if (Settings->sbflag1.serbridge_console && princess_fan_buffer) {
+  if (Settings->sbflag1.serbridge_console && buffer) {
     va_list arg;
     va_start(arg, formatP);
     char* data = ext_vsnprintf_malloc_P(formatP, arg);
@@ -68,30 +69,56 @@ void PrincessFanPrintf(PGM_P formatP, ...) {
 }
 
 /********************************************************************************************/
+void decode_fan_message() {
+  
+}
 
 void PrincessFanInput(void) {
   while (PrincessFanSerial->available()) {
     yield();
     uint8_t serial_in_byte = PrincessFanSerial->read();
 
-    princess_fan_polling_window = millis();                                   // Wait for more data
+    if (in_byte_counter == 0 && serial_in_byte != 0xaa) {   // sync, first byte must be 0xaa
+      continue;
+    }
+
+    if (in_byte_counter < PRINCESS_FAN_PACKET_SIZE) {       // Add char to string if it still fits
+      buffer[in_byte_counter++] = serial_in_byte;
+    } 
+    
+    if (in_byte_counter == PRINCESS_FAN_PACKET_SIZE) {      // message complete
+      decode_fan_message();
+
+      Response_P(PSTR("{\"" D_JSON_FANSERIALRECEIVED "\":"));
+      ResponseAppend_P("0x%02x 0x%02x 0x%02x 0x%02x ", buffer[0], buffer[1], buffer[2], buffer[3]);
+      ResponseJsonEnd();
+
+
+      MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_TELE, PSTR(D_JSON_FANSERIALRECEIVED));
+      in_byte_counter = 0;
+    }
+
+    polling_window = millis();                 // Wait for more data
   }
 }
 
 /********************************************************************************************/
 
 void PrincessFanInit(void) {
+  AddLog(LOG_LEVEL_DEBUG, PSTR("Princess Fan check serial pins")); 
   if (PinUsed(GPIO_PRINCESS_FAN_RX) && PinUsed(GPIO_PRINCESS_FAN_TX)) {
     PrincessFanSerial = new TasmotaSerial(Pin(GPIO_PRINCESS_FAN_RX), Pin(GPIO_PRINCESS_FAN_TX), HARDWARE_FALLBACK);
+    AddLog(LOG_LEVEL_DEBUG, PSTR("Princess Fan create serial")); 
     if (SetPrincessFanBegin()) {
       if (PrincessFanSerial->hardwareSerial()) {
+        AddLog(LOG_LEVEL_DEBUG, PSTR("Princess Fan start hardware serial")); 
         ClaimSerial();
-        princess_fan_buffer = TasmotaGlobal.serial_in_buffer;  // Use idle serial buffer to save RAM
+        buffer = TasmotaGlobal.serial_in_buffer;  // Use idle serial buffer to save RAM
       } else {
-        princess_fan_buffer = (char*)(malloc(SERIAL_BRIDGE_BUFFER_SIZE));
+        buffer = (char*)(malloc(BUFFER_SIZE));
       }
       PrincessFanSerial->flush();
-      PrincessFanPrintf("\r\n");
+      PrincessFanPrintf("hello princess\r\n");
     }
   }
 }
@@ -100,7 +127,7 @@ void PrincessFanInit(void) {
  * Commands
 \*********************************************************************************************/
 
-void CmndSSerialSend(void) {
+void CmndPrincessSend(void) {
 }
 
 
@@ -115,9 +142,9 @@ bool Xdrv88(uint8_t function) {
     AddLog(LOG_LEVEL_INFO, PSTR("Princess Fan start init")); 
     PrincessFanInit();
     AddLog(LOG_LEVEL_INFO, PSTR("Princess Fan init done")); 
-    PrincessFanPrintf(PSTR("Princess Fan Init done"));
+    PrincessFanPrintf(PSTR("Princess Fan message to serial"));
   }
-  else if (princess_fan_buffer) {
+  else if (buffer) {
     switch (function) {
       case FUNC_LOOP:
         PrincessFanInput();
